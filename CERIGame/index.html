@@ -1,0 +1,277 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.2/angular.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.2/angular-route.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+	<script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+	<script src="app/controllers/controller.js"></script>
+	<script src="app/services/service.js"></script>
+	<script src="app/app.js"></script>
+	<link rel="stylesheet" href="css/quizz.css" type="text/css" media="all" />
+	<title>CeriGAME</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="keywords" content="Projet Quizz M1, EL KADOURI Soufiane, RASSU Michaël" />
+	<script type="application/x-javascript">
+		addEventListener("load", function() {
+			setTimeout(hideURLbar, 0);
+		}, false);
+
+		function hideURLbar() {
+			window.scrollTo(0, 1);
+		}
+	</script>
+</head>
+
+<body>
+	<div class="container" ng-app="MonAppli">
+		<div class="main" ng-controller="MonCont">
+			<!-- Module controller MonCont -->
+			<balise id="hautdepage"></balise>
+
+			<h1>CeriGAME</h1>
+			<!--
+			Partie des bandeau dynamique
+			-->
+			<div class="contact-form">
+				<div class="signin" ng-show="bandeauVisible || bandeausocketOn || bandeaunouveaudefiOn">
+					<span class="bando" id="bandeau" ng-show="bandeauVisible">
+						<p> {{bandeau}} </p>
+					</span>
+					<span class="bando" id="bandeau" ng-show="bandeausocketOn">
+						<p class="regardermoi"> {{bandeausocket}} </p>
+					</span>
+					<span class="bando" id="bandeau" ng-show="bandeaunouveaudefiOn">
+						<p class="regardermoi"> {{bandeaunouveaudefi}} </p>
+					</span>
+				</div>
+			</div>
+			<!--
+			Partie connexion
+			-->
+			<div class="contact-form">
+				<div class="signin" ng-hide="JeuLance">
+					<form class="login-form" name="login-form" ng-submit="login()" ng-hide="connected">
+						<input type="text" class="user" value="Enter Here" placeholder="Nom d'utilisateur" onfocus="this.value = '';" onblur="if (this.value == '') {this.value = 'Enter Here';}" ng-model="username" />
+						<input type="password" class="pass" value="Password" placeholder="Mot de passe" onfocus="this.value = '';" onblur="if (this.value == '') {this.value = 'Password';}" ng-model="password" />
+						<p>{{messageConnexion}}
+							<input type="submit" id="connect" type="submit" value="connexion" />
+							<p class="message">Pas de compte? <a href="https://pedago02a.univ-avignon.fr/~fredouil/register_jeu.php">Inscrivez-vous</a></p>
+					</form>
+					<!--
+					Partie du menu
+					-->
+					<div class="contener" ng-show="bandeauPrincipal">
+						<span class="colonne">
+							<button ng-click="CommencerPartie()">Jouer au Quizz</button>
+							<button ng-hide="bandeauDefiAttente" ng-click="AfficheDefi()">Voir les defis en attentes ({{nbDefiEnAttente}} Defi En Attentes)</button>
+							<button ng-hide="!bandeauDefiAttente" ng-click="DessaficheDefi()">Masquer les defis en attentes</button>
+							<button ng-hide="bandeauHistorique" ng-click="VoirHistorique()">Voir l'historique</button>
+							<button ng-hide="!bandeauHistorique" ng-click="DesafficheHistorique()">Masquer l'historique</button>
+							<button ng-hide="bandeauProfil" ng-click="AfficheProfil()">Voir le profil</button>
+							<button ng-hide="!bandeauProfil" ng-click="DesafficheProfil()">Masquer le profil</button>
+							<button ng-hide="bandeauProfilConnect" ng-click="AfficheProfilConnect()">Voir les profils connectés</button>
+							<button ng-hide="!bandeauProfilConnect" ng-click="DesafficheProfilConnect()">Masquer les profils connectés</button>
+							<button ng-click="ChoisirJoueurAllumette()">Jouer au jeu des allumettes</button>
+							<button ng-hide="bandeauHistoriqueDefiAllu" ng-click="VoirHistoAllu()">Historique du jeu des allumettes</button>
+							<button ng-hide="!bandeauHistoriqueDefiAllu" ng-click="MasquerHistoAllu()">Masquer historique du jeu des allumettes</button>
+							<button ng-click="logOut()">Deconnexion</button>
+						</span>
+					</div>
+				</div>
+			</div>
+
+
+			<!--
+			Partie des sous menus, du quizz et du jeu.
+			-->
+			<div class="contact-form">
+				<div class="signin" ng-show="bandeauHistorique || bandeauHistoriqueDefi || bandeauChangerProfil || bandeauQuizzChoixTheme || bandeauQuizzJeuEnCours || bandeauChoisirUtilisateurDefi || bandeauDefiAttente || bandeauQuizzChoixNiveau || bandeauNouveauJeu || bandeauProfil || bandeauChoisirUtilisateurDefiAllu || bandeauProfilConnect || bandeauHistoriqueDefiAllu">
+
+					<span class="bandoProfil" id="bandeau2" ng-show="bandeauProfil">
+						<p> <img ng-src="{{photo}}" width="100" height="100"></p>
+						<p>Nom : {{nom}} </p>
+						<p>Prenom : {{prenom}} </p>
+						<p>Nom d'utilisateur : {{username}} </p>
+						<p><button ng-click="changerProfil()">Modifier profil</button></p>
+					</span>
+
+					<span class="bandoProfilConnect" ng-show="bandeauProfilConnect">
+						<b class="titre">Liste des utilisateurs connectés : </b></br></br>
+						<table>
+							<tr>
+								<th>Avatar</th>
+								<th>Identifiant</th>
+								<th>Nom</th>
+								<th>Prenom</th>
+							</tr>
+							<tr ng-repeat="users in listeUtilisateur| filter: {statut: 1}">
+								<td ng-if="users.avatar != null"><img ng-src="{{users.avatar}}" width="50" height="50"></td>
+								<td ng-if="users.avatar == null"><img ng-src="{{pasdephoto}}" width="50" height="50"></td>
+								<td>{{users.identifiant}}</td>
+								<td>{{users.nom}}</td>
+								<td>{{users.prenom}}</td>
+							</tr>
+						</table>
+						<button ng-click="menu()">Retour au menu</button>
+					</span>
+
+					<span class="bandoHistorique" id="bandeau2" ng-show="bandeauHistorique">
+						<b class="titre">Historique :</b>
+						<br>
+						<table>
+							<tr>
+								<th>Date</th>
+								<!--
+						formater la date avec pipe
+						-->
+								<th>Nb reponse</th>
+								<th>Temps</th>
+								<th>Score</th>
+							</tr>
+							<tr ng-repeat="row in historique | limitTo:-10">
+								<td ng-repeat="column in row">{{column}}</td>
+							</tr>
+						</table>
+					</span>
+					<span class="bandoHistoriqueDefi" id="bandeau2" ng-show="bandeauHistoriqueDefi">
+						<b class="titre">Historique Defi :</b>
+						<br>
+						<table>
+							<tr>
+								<th>Date</th>
+								<th>Contre</th>
+								<th>Résultat</th>
+							</tr>
+							<tr ng-repeat="row in histoDefi">{{row}}
+								<td ng-repeat="column in row">{{column}}</td>
+							</tr>
+
+						</table>
+					</span>
+
+
+					<span class="bandoHistoriqueAllu" id="bandeau2" ng-show="bandeauHistoriqueDefiAllu">
+						<b class="titre">Historique Allumettes :</b>
+						<br>
+						<table>
+							<tr>
+								<th>Date</th>
+								<th>Contre</th>
+								<th>Résultat</th>
+							</tr>
+							<tr ng-repeat="row in histodefiAllumette">{{row}}
+								<td ng-repeat="column in row">{{column}}</td>
+							</tr>
+
+						</table>
+					</span>
+
+					<span class="bandoTopTen" id="bandeau2" ng-show="bandoTopTen">
+						<b class="titre">TOP 10 :</b>
+						<br>
+						<table>
+							<tr>
+								<th>Date</th>
+								<th>Nom</th>
+								<th>Score</th>
+							</tr>
+							<tr ng-repeat="row in topTenArray">{{row}}
+								<td ng-repeat="column in row">{{column}}</td>
+							</tr>
+
+						</table>
+						<button ng-click="menu()">Retour au menu</button>
+					</span>
+					<span class="bandoProfil" id="bandeau3" ng-show="bandeauChangerProfil">
+						<form class="signin" name="modif-form" ng-submit="modifierProfil()">
+							<p>Laissez vide si vous ne voulez pas modifiez</p>
+							<input class="form-control" id='nom' type="texte" placeholder="nom" name="nom" ng-model="modifnom"></br>
+							<input class="form-control" id='prenom' type="texte" placeholder="prenom" name="prenom" ng-model="modifprenom">
+							<input class="boutonModif" id="connect" type="submit" value="Valider les changements">
+						</form>
+
+						<form class="signin" name="modif-form" action="/photo" method="post" enctype="multipart/form-data" target="uploader" ng-submit="ActualisePhoto()">
+							<input name="avatar" type="file" id="avatar" accept="image/*" required ng-model="modifphoto">
+							<input class="boutonModif" type="submit" value="Changer la photo">
+						</form>
+						<iframe id="uploader" name="uploader" ng-show="iframe"></iframe>
+						<button ng-click="menu()">Retour au menu</button>
+					</span>
+
+
+					<span class="bandoQuizz" id="bandeau5" ng-show="bandeauQuizzChoixTheme">
+						<p>Choisissez votre thème : </p>
+						<label ng-repeat="theme in quizz">
+							<div class="contener" <input type="radio" name="selectedQuizz[]" value="{{theme}}" ng-checked="selection.indexOf(theme)" ng-click="choixTheme(theme)">{{theme}}
+							</div>
+						</label>
+						<button ng-click="menu()">Retour au menu</button>
+					</span>
+
+					<span class="bandoQuizz" id="bandeau6" ng-show="bandeauQuizzJeuEnCours">
+						<p>Temps en cours : {{tempsCourant}} secondes</p>
+						<p>Question : {{questionEnCours}} </p>
+						<label ng-repeat="reponse in Proposition">
+							<div class="contener" <input type="radio" name="selectedAnwser[]" value="{{reponse}}" ng-checked="selection.indexOf(reponse)>-1" ng-click="choixReponse(reponse)">{{reponse}}
+							</div>
+						</label>
+					</span>
+
+					<span class="bandoQuizz" id="bandeau4" ng-show="bandeauChoisirUtilisateurDefi">
+						<p>Choisissez l'utilisateur à défier : </p>
+						<label ng-repeat="users in listeUtilisateur| filter: {statut: 1}">
+							<div class="contener">
+								<input type="radio" style='visibility:hidden;display:none' name="selectedLevel[]" value="{{users}}" ng-checked="selection.indexOf(users)>-1" ng-click="LancerDefi(users)">{{users.identifiant}}
+							</div>
+						</label>
+					</span>
+					<span class="bandoQuizz" id="bandeau4" ng-show="bandeauChoisirUtilisateurDefiAllu">
+						<p>Choisissez l'utilisateur à défier : </p>
+						<label ng-repeat="users in listeUtilisateur| filter: {statut: 1}">
+							<div class="contener">
+								<input type="radio" style='visibility:hidden;display:none' name="selectedLevel[]" value="{{users}}" ng-checked="selection.indexOf(users)>-1" ng-click="ChoixAdversaireAllumette(users)">{{users.identifiant}}
+							</div>
+						</label>
+						<button ng-click="menu()">Retour au menu</button>
+					</span>
+
+					<span class="bandoQuizz" id="bandeau5" ng-show="bandeauDefiAttente">
+						<p>Vous avez {{nbDefiEnAttente}} defis en attentes. </p>
+						<p ng-show="bandeauSiDefiEnAttente">Defi de {{defiEnAttente.name}} :
+							<button ng-click="AccepterDefi(defiEnAttente)">Accepté défi</button>
+							<button ng-click="RefuserDefi(defiEnAttente)">Refuser Defi</button>
+						</p>
+					</span>
+					<span class="bandoQuizz" id="bandeau4" ng-show="bandeauQuizzChoixNiveau">
+						<p>Choisissez votre niveau : </p>
+						<label ng-repeat="level in niveau">
+							<div class="contener">
+								<input type="radio" style='visibility:hidden;display:none' name="selectedLevel[]" value="{{level}}" ng-checked="selection.indexOf(level)>-1" ng-click="choixNiveau(level)">{{level}}
+							</div>
+						</label>
+						<button ng-click="menu()">Retour au menu</button>
+					</span>
+					<span class="bandoNewJeu" id="bandeau6" ng-show="bandeauNouveauJeu">
+						<p> {{bandeau}} </p>
+						<label for="{{ 'textField-' + $index }}" ng-repeat="x in tableau track by $index">
+							<img id={{$index+1}} ng-src="{{allumette}}" ng-show="x === true" data-ng-click="EnleverAllumette($event)" width="18">
+						</label>
+						<p> {{nballuchoisi}} </p>
+						<button ng-click="choixun()" ng-show="isButtonVisibleChoix === true">1</button>
+						<button ng-click="choixdeux()" ng-show="isButtonVisibleChoix === true">2</button>
+						<button ng-click="choixtrois()" ng-show="isButtonVisibleChoix === true">3</button>
+						<button ng-click="menu()" ng-show="isButtonVisibleMenu === true">Retour au menu</button>
+					</span>
+				</div>
+			</div>
+		</div>
+		<div class="footer">
+			<p>Copyright &copy; 2018 EL KADOURI SOUFIANE & RASSU MICHAEL</p>
+		</div>
+</body>
+
+</html>

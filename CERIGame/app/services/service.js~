@@ -1,0 +1,87 @@
+function accessDataService($http){
+	/**
+	* getInfo : la fonction getInfo retourne une promesse provenant du service http
+	* @param url
+	* @returns {*|Promise}
+	*/
+	this.getInfo = function(url){
+		// Appel Ajax
+		return $http
+		.get(url)
+		.then(function(response) { //First function handles success
+			return(response.data);
+			},
+			function(response) {
+				//Second function handles error
+				return("Something went wrong");
+		});
+	}
+}
+
+// Service d'authentification
+function AuthService($http, session) {
+	this.logIn = function(login, pwd){
+		console.log(session.getUser());
+		return $http // ne pas retourner une promesse a enlever, envoyer vers controller sans return http
+			.get('/login?login=' + login + '&mdp=' + pwd)
+			.then(function(response){ //response de server.js avec res.send(responseData)
+				console.log("response service :", response.data);
+				var data = response.data;
+				var date = new Date();
+				var now = date.getDay()+'/'+d.getMonth()+'/'+d.getFullYear()+' '+d.getHours()+':'+d.getMinutes();
+				if(typeof data.username !== 'undefined') {
+					data.last_connect2 = session.getInfo('last_connect');
+					
+					session.setUser(data.name);
+					session.setInfo('name',data.name);
+					session.setInfo('username',data.username);
+					session.setInfo('firstName',data.firstName);
+					session.setInfo('last_connect',new Date());
+
+
+				}
+				return(response.data); // data retourne ici et est renvoyé vers controller
+			});
+	}
+
+	this.logOut = function() {
+		return $http
+			.get('/logout')
+			.then(function(response) {
+				session.destroy();
+				return(response.data);
+			});
+
+	};
+
+	this.isLoggedIn = function() {
+		return session.getUser() !== null;
+	}
+}
+
+function sessionService($log, $window) {
+	// Instantiate data when service is loaded
+	this._user = JSON.parse($window.localStorage.getItem('session.user'));
+	this.getUser = function(){
+		return this._user;
+	};
+	this.setUser = function(user){
+		this._user = user;
+		$window.localStorage.setItem('session.user', JSON.stringify(user));
+		return this;
+	};
+	this.setInfo = function(key, value) {
+		$window.localStorage.setItem('session.' + key, JSON.stringify(value));
+	};
+	this.getInfo = function(key) {
+		return JSON.parse($window.localStorage.getItem('session.' + key));
+	}
+	this.destroy = function() {
+		$window.localStorage.removeItem('session.name');
+		$window.localStorage.removeItem('session.username');
+		$window.localStorage.removeItem('session.firstname');
+
+		this._user = null;
+
+	}
+}
